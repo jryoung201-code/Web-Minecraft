@@ -1,60 +1,76 @@
 /**
  * Minecraft EasyProxi — Backend Server
- * Node.js + Express + Socket.IO + WebRTC Signaling
+ * Node.js + Express + Socket.IO + WebRTC
  */
 
-const express = require('express');
-const http = require('http');
-const { Server } = require('socket.io');
-const cors = require('cors');
-const path = require('path');
+// Load .env file if present
+try { require('dotenv').config(); } catch(e) {}
 
-const routes = require('./routes');
+const express = require('express');
+const http    = require('http');
+const { Server } = require('socket.io');
+const cors    = require('cors');
+const path    = require('path');
+
+const routes         = require('./routes');
 const { initSocket } = require('./socket');
 
-const app = express();
+const app    = express();
 const server = http.createServer(app);
 
-// ─── SOCKET.IO ────────────────────────────────────────────────────────────────
+// ─── Socket.IO ────────────────────────────────────────────────────────────────
 const io = new Server(server, {
-  cors: {
-    origin: process.env.FRONTEND_URL || '*',
-    methods: ['GET', 'POST'],
-  },
+  cors: { origin: process.env.FRONTEND_URL || '*', methods: ['GET', 'POST'] },
 });
 
-// ─── MIDDLEWARE ───────────────────────────────────────────────────────────────
-app.use(cors({
-  origin: process.env.FRONTEND_URL || '*',
-  credentials: true,
-}));
-
+// ─── Middleware ───────────────────────────────────────────────────────────────
+app.use(cors({ origin: process.env.FRONTEND_URL || '*', credentials: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve static frontend (for monorepo deployments)
+// ─── Static frontend ─────────────────────────────────────────────────────────
 app.use(express.static(path.join(__dirname, '../frontend')));
 
-// ─── API ROUTES ───────────────────────────────────────────────────────────────
+// ─── API routes ───────────────────────────────────────────────────────────────
 app.use('/api', routes);
+app.use('/api/modrinth', require('./modrinth'));
 
-// ─── SOCKET.IO INIT ───────────────────────────────────────────────────────────
+// ─── Socket.IO ────────────────────────────────────────────────────────────────
 initSocket(io);
 
-// ─── CATCH ALL → index.html ──────────────────────────────────────────────────
+// ─── SPA fallback ─────────────────────────────────────────────────────────────
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/index.html'));
 });
 
-// ─── START SERVER ─────────────────────────────────────────────────────────────
+// ─── Start ────────────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`
 ╔══════════════════════════════════════════╗
 ║   Minecraft EasyProxi Backend v1.0       ║
 ║   http://localhost:${PORT}                   ║
-║   minecraft.easyproxi.online             ║
 ╚══════════════════════════════════════════╝
+
+API routes:
+  GET    /api/health
+  GET    /api/status
+  GET    /api/nodes
+  GET    /api/versions
+  POST   /api/login
+  POST   /api/register
+  GET    /api/session
+  POST   /api/session/start
+  DELETE /api/session/:id
+  POST   /api/session/:id/command
+  GET    /api/session/:id/log
+  GET    /api/queue
+  POST   /api/queue/join
+  GET    /api/modrinth/search
+  GET    /api/modrinth/project/:slug
+  POST   /api/modrinth/download
+  GET    /api/modrinth/featured
+  GET    /api/servers/active
   `);
 });
 
