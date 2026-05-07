@@ -1,0 +1,8 @@
+# Cloudflare Pages — _redirects
+# Place this file inside /frontend/
+
+# API proxy to backend
+/api/* https://api.minecraft.easyproxi.online/api/:splat 200
+
+# SPA fallback
+/* /index.html 200

@@ -1,0 +1,1126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Play — Minecraft EasyProxi</title>
+  <link rel="stylesheet" href="style.css"/>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%234ade80'/><text y='24' font-size='22' x='4'>🌿</text></svg>"/>
+  <style>
+    body { overflow: hidden; }
+    .play-page { display:flex; flex-direction:column; height:100vh; padding-top:68px; }
+    .play-body { flex:1; display:flex; flex-direction:column; }
+
+    /* ── Pre-connect panel ── */
+    #preconnect-panel {
+      position:absolute; inset:0;
+      display:flex; align-items:center; justify-content:center;
+      z-index:40;
+      background:radial-gradient(ellipse at center, #0d1a0d 0%, #000 100%);
+      overflow-y:auto; padding:20px;
+    }
+    .preconnect-inner {
+      display:flex; flex-direction:column; align-items:center;
+      gap:22px; padding:36px 40px;
+      max-width:600px; width:100%;
+    }
+    .preconnect-icon { font-size:68px; animation:float 4s ease infinite; }
+    .preconnect-title { font-family:'Rajdhani',sans-serif; font-size:2rem; font-weight:700; text-align:center; }
+
+    /* ── Custom Dropdown ── */
+    .ep-dropdown { position:relative; width:100%; }
+
+    .ep-dropdown-trigger {
+      width:100%; padding:11px 14px;
+      background:rgba(255,255,255,0.04);
+      border:1px solid var(--border); border-radius:var(--radius);
+      color:var(--text); font-family:'Outfit',sans-serif; font-size:0.9rem;
+      cursor:pointer; display:flex; align-items:center;
+      justify-content:space-between; gap:10px;
+      transition:var(--transition); text-align:left;
+    }
+    .ep-dropdown-trigger:hover, .ep-dropdown-trigger.open {
+      border-color:var(--green); background:rgba(74,222,128,0.06);
+    }
+    .ep-dropdown-trigger .trigger-left { display:flex; align-items:center; gap:10px; }
+    .ep-dropdown-trigger .trigger-icon { font-size:18px; }
+    .ep-dropdown-trigger .trigger-text { display:flex; flex-direction:column; }
+    .ep-dropdown-trigger .trigger-name { font-weight:600; font-size:0.88rem; line-height:1.2; }
+    .ep-dropdown-trigger .trigger-sub  { font-size:0.7rem; color:var(--text-muted); font-family:'JetBrains Mono',monospace; }
+    .ep-dropdown-arrow { font-size:10px; color:var(--text-muted); transition:transform 0.2s ease; flex-shrink:0; }
+    .ep-dropdown-trigger.open .ep-dropdown-arrow { transform:rotate(180deg); }
+
+    .ep-dropdown-menu {
+      display:none; position:absolute; top:calc(100% + 5px); left:0; right:0;
+      background:#0d1117; border:1px solid var(--border); border-radius:var(--radius);
+      z-index:200; overflow:hidden; box-shadow:0 16px 48px rgba(0,0,0,0.65);
+      max-height:250px; overflow-y:auto;
+    }
+    .ep-dropdown-menu.open { display:block; animation:fadein 0.15s ease; }
+
+    .ep-dropdown-item {
+      display:flex; align-items:center; gap:12px; padding:11px 14px;
+      cursor:pointer; transition:background 0.15s;
+      border-bottom:1px solid rgba(255,255,255,0.04);
+    }
+    .ep-dropdown-item:last-child { border-bottom:none; }
+    .ep-dropdown-item:hover { background:rgba(74,222,128,0.07); }
+    .ep-dropdown-item.selected { background:rgba(74,222,128,0.1); }
+
+    .ep-dropdown-item .item-icon { font-size:20px; flex-shrink:0; }
+    .ep-dropdown-item .item-body { flex:1; min-width:0; }
+    .ep-dropdown-item .item-name { font-size:0.88rem; font-weight:600; color:var(--text); }
+    .ep-dropdown-item.selected .item-name { color:var(--green); }
+    .ep-dropdown-item .item-desc { font-size:0.7rem; color:var(--text-muted); margin-top:1px; font-family:'JetBrains Mono',monospace; }
+
+    .item-badge {
+      font-size:0.66rem; font-weight:700; padding:2px 7px;
+      border-radius:5px; flex-shrink:0; text-transform:uppercase; letter-spacing:.5px;
+    }
+    .badge-green  { background:rgba(74,222,128,0.15);  color:var(--green); }
+    .badge-yellow { background:rgba(251,191,36,0.15);   color:var(--yellow); }
+    .badge-blue   { background:rgba(96,165,250,0.15);   color:var(--blue); }
+    .badge-red    { background:rgba(248,113,113,0.15);  color:var(--red); }
+    .badge-gray   { background:rgba(255,255,255,0.07);  color:var(--text-muted); }
+
+    /* ── Config layout ── */
+    .config-section { width:100%; }
+    .config-section-label {
+      font-size:0.7rem; text-transform:uppercase; letter-spacing:1.5px;
+      color:var(--text-muted); margin-bottom:7px; font-weight:600;
+    }
+    .config-row { display:grid; grid-template-columns:1fr 1fr; gap:14px; width:100%; }
+    .config-card-sm {
+      background:rgba(255,255,255,0.03); border:1px solid var(--border);
+      border-radius:var(--radius); padding:14px;
+    }
+    .config-card-sm label {
+      display:block; font-size:0.68rem; text-transform:uppercase;
+      letter-spacing:1px; color:var(--text-muted); margin-bottom:7px;
+    }
+    .connect-actions { display:flex; flex-direction:column; gap:10px; width:100%; }
+
+    /* ── Connecting panel ── */
+    #connecting-panel {
+      display:none; position:absolute; inset:0;
+      flex-direction:column; align-items:center; justify-content:center;
+      gap:26px; z-index:40;
+      background:radial-gradient(ellipse at center, #0d1a0d 0%, #000 100%);
+    }
+    #connecting-panel.show { display:flex; }
+
+    .connect-steps { display:flex; flex-direction:column; gap:13px; min-width:300px; }
+    .connect-step  { display:flex; align-items:center; gap:13px; font-size:0.88rem; }
+    .step-icon {
+      width:28px; height:28px; border-radius:50%; background:rgba(255,255,255,0.06);
+      display:grid; place-items:center; font-size:12px; flex-shrink:0; transition:var(--transition);
+    }
+    .step-icon.done   { background:rgba(74,222,128,0.2); color:var(--green); font-size:13px; }
+    .step-icon.active::before {
+      content:''; display:block; width:13px; height:13px;
+      border:2px solid rgba(255,255,255,0.1); border-top-color:var(--green);
+      border-radius:50%; animation:spin 0.7s linear infinite;
+    }
+    .step-label         { color:var(--text-muted); transition:color 0.3s; }
+    .step-label.done    { color:var(--text); }
+    .step-label.active  { color:var(--green); }
+
+    .launch-chips { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; }
+    .launch-chip {
+      background:rgba(74,222,128,0.08); border:1px solid var(--border);
+      border-radius:99px; padding:4px 12px;
+      font-size:0.73rem; font-family:'JetBrains Mono',monospace; color:var(--green);
+    }
+
+    #startup-console {
+      width:360px; max-height:90px; overflow-y:auto;
+      background:rgba(0,0,0,0.6); border:1px solid rgba(74,222,128,0.18);
+      border-radius:8px; padding:8px 12px;
+      font-family:'JetBrains Mono',monospace; font-size:0.67rem; color:rgba(255,255,255,0.55);
+    }
+
+    /* ── Queue ── */
+    .queue-panel {
+      position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+      background:rgba(8,12,16,0.97); backdrop-filter:blur(24px);
+      border:1px solid var(--border); border-radius:var(--radius-lg);
+      padding:40px; text-align:center; min-width:340px; z-index:20;
+    }
+    .queue-spinner {
+      width:52px; height:52px; border:3px solid var(--border);
+      border-top-color:var(--green); border-radius:50%;
+      animation:spin 1s linear infinite; margin:0 auto 18px;
+    }
+    .queue-title { font-family:'Rajdhani',sans-serif; font-size:1.3rem; font-weight:700; margin-bottom:6px; }
+    .queue-pos { font-size:3rem; font-weight:700; font-family:'JetBrains Mono',monospace; color:var(--green); line-height:1; margin:12px 0 6px; }
+    .queue-progress { margin-top:18px; height:4px; background:var(--border); border-radius:99px; overflow:hidden; }
+    .queue-progress-fill { height:100%; background:var(--green); border-radius:99px; animation:queue-fill 3s ease infinite; }
+    @keyframes queue-fill { 0%{width:5%} 50%{width:80%} 100%{width:96%} }
+
+    /* ── Stream overlay ── */
+    .stream-overlay { position:absolute; inset:0; pointer-events:none; z-index:10; }
+    .overlay-top {
+      position:absolute; top:0; left:0; right:0; padding:13px 16px;
+      display:flex; justify-content:space-between; align-items:flex-start;
+      background:linear-gradient(to bottom,rgba(0,0,0,0.75),transparent);
+      pointer-events:all;
+    }
+    .overlay-bottom {
+      position:absolute; bottom:0; left:0; right:0; padding:13px 16px;
+      display:flex; justify-content:space-between; align-items:center;
+      background:linear-gradient(to top,rgba(0,0,0,0.85),transparent);
+      pointer-events:all; gap:10px; flex-wrap:wrap;
+    }
+    .overlay-stats { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+    .stat-pill {
+      display:flex; align-items:center; gap:5px;
+      background:rgba(0,0,0,0.6); backdrop-filter:blur(8px);
+      border:1px solid rgba(255,255,255,0.1); border-radius:99px;
+      padding:4px 11px; font-family:'JetBrains Mono',monospace; font-size:0.74rem;
+    }
+    .stat-pill .label { color:rgba(255,255,255,0.42); }
+    .stat-pill .value { color:var(--green); font-weight:600; }
+    .stream-controls { display:flex; gap:7px; align-items:center; }
+    .ctrl-btn {
+      background:rgba(0,0,0,0.6); backdrop-filter:blur(8px);
+      border:1px solid rgba(255,255,255,0.1); border-radius:10px;
+      color:white; width:38px; height:38px; display:grid; place-items:center;
+      cursor:pointer; font-size:14px; transition:var(--transition);
+    }
+    .ctrl-btn:hover { background:rgba(74,222,128,0.2); border-color:var(--green); }
+
+    /* ── Minecraft console ── */
+    #mc-console {
+      display:none; position:absolute; bottom:68px; left:14px;
+      width:400px; max-height:170px;
+      background:rgba(0,0,0,0.88); border:1px solid rgba(74,222,128,0.2);
+      border-radius:10px; overflow-y:auto; padding:10px 12px;
+      font-family:'JetBrains Mono',monospace; font-size:0.68rem;
+      color:rgba(255,255,255,0.65); z-index:20; pointer-events:all;
+    }
+    #mc-console.show { display:block; }
+    .mc-log-line { line-height:1.65; }
+    .mc-log-line.info  { color:#a3e8b0; }
+    .mc-log-line.warn  { color:var(--yellow); }
+    .mc-log-line.error { color:var(--red); }
+    .mc-log-line.done  { color:var(--green); font-weight:700; }
+
+    /* ── MC status badge ── */
+    #mc-status-badge {
+      position:absolute; top:9px; right:9px;
+      display:none; align-items:center; gap:7px;
+      background:rgba(0,0,0,0.75); backdrop-filter:blur(8px);
+      border:1px solid rgba(255,255,255,0.1); border-radius:99px;
+      padding:5px 13px; font-family:'JetBrains Mono',monospace;
+      font-size:0.7rem; z-index:50;
+    }
+    #mc-status-badge.show { display:flex; }
+
+    /* ── FPS counter ── */
+    #fps-counter {
+      position:absolute; top:9px; left:9px;
+      font-family:'JetBrains Mono',monospace; font-size:0.73rem;
+      background:rgba(0,0,0,0.7); border:1px solid rgba(255,255,255,0.1);
+      border-radius:6px; padding:4px 9px; color:var(--green); z-index:50; display:none;
+    }
+
+    /* ── Reconnect banner ── */
+    #reconnect-banner {
+      display:none; position:absolute; top:68px; left:50%; transform:translateX(-50%);
+      background:rgba(248,113,113,0.14); border:1px solid rgba(248,113,113,0.3);
+      border-radius:10px; padding:9px 18px; font-size:0.86rem; color:var(--red);
+      z-index:60; align-items:center; gap:10px; white-space:nowrap;
+    }
+    #reconnect-banner.show { display:flex; }
+    #reconnect-banner button {
+      background:none; border:1px solid var(--red); border-radius:6px;
+      padding:3px 9px; color:var(--red); cursor:pointer; font-size:0.78rem;
+    }
+
+    /* ── Settings panel ── */
+    #settings-panel {
+      display:none; position:absolute; inset:0;
+      background:rgba(0,0,0,0.85); backdrop-filter:blur(12px);
+      z-index:30; align-items:flex-end; justify-content:flex-end; padding:80px 18px;
+    }
+    #settings-panel.show { display:flex; }
+    .settings-card {
+      width:340px; background:var(--bg-2); border:1px solid var(--border);
+      border-radius:var(--radius-lg); padding:26px;
+      overflow-y:auto; max-height:calc(100vh - 180px);
+    }
+    .settings-section-title {
+      font-family:'Rajdhani',sans-serif; font-size:0.9rem; font-weight:700;
+      color:var(--green); margin-bottom:10px; margin-top:18px;
+      text-transform:uppercase; letter-spacing:1px;
+    }
+    .settings-section-title:first-of-type { margin-top:0; }
+    .kb-hints-row { display:flex; flex-wrap:wrap; gap:8px; }
+    .kb-pair { display:flex; align-items:center; gap:6px; font-size:0.76rem; color:var(--text-muted); }
+
+    /* ── Pause menu ── */
+    .pause-menu {
+      display:none; position:absolute; inset:0;
+      background:rgba(0,0,0,0.85); backdrop-filter:blur(12px);
+      z-index:30; align-items:center; justify-content:center;
+    }
+    .pause-menu.show { display:flex; }
+    .pause-card {
+      background:var(--bg-card); border:1px solid var(--border);
+      border-radius:var(--radius-lg); padding:34px; min-width:290px;
+    }
+    .pause-title { font-family:'Rajdhani',sans-serif; font-size:1.55rem; font-weight:700; text-align:center; margin-bottom:22px; }
+    .pause-menu-list { display:flex; flex-direction:column; gap:10px; }
+
+    /* ── Summary chips ── */
+    #config-summary { display:flex; gap:7px; flex-wrap:wrap; justify-content:center; opacity:0.65; }
+    .summary-chip {
+      background:rgba(74,222,128,0.08); border:1px solid var(--border);
+      border-radius:99px; padding:3px 11px;
+      font-size:0.7rem; font-family:'JetBrains Mono',monospace; color:var(--green);
+    }
+  </style>
+</head>
+<body>
+
+<div class="bg-grid"></div>
+<div class="bg-orb bg-orb-1" style="opacity:0.3;"></div>
+<canvas id="particles-canvas"></canvas>
+
+<!-- Nav -->
+<nav class="nav">
+  <a href="index.html" class="nav-logo">
+    <span class="logo-icon">🌿</span>EASYPROXI
+  </a>
+  <ul class="nav-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="play.html" class="active">Play</a></li>
+    <li><a href="dashboard.html">Dashboard</a></li>
+  </ul>
+  <div class="nav-actions">
+    <div class="live-pill"><div class="live-dot"></div><span id="live-count">—</span> online</div>
+    <a href="login.html" class="btn btn-ghost btn-sm">Sign In</a>
+  </div>
+</nav>
+
+<div class="play-page">
+  <div class="play-body">
+    <div class="stream-area" id="stream-area">
+
+      <!-- Overlays (always present) -->
+      <div id="fps-counter">FPS: <span id="fps-val">—</span></div>
+
+      <div id="mc-status-badge">
+        <div class="live-dot"></div>
+        <span id="mc-status-text">Minecraft Running</span>
+      </div>
+
+      <video id="stream-video" autoplay playsinline muted></video>
+
+      <div class="stream-placeholder" id="stream-placeholder">
+        <div style="font-size:72px;animation:float 4s ease infinite;">⛏️</div>
+        <div style="font-family:'Rajdhani',sans-serif;font-size:1.6rem;font-weight:700;color:var(--green);">Configure & Launch</div>
+        <div style="color:var(--text-muted);font-size:0.88rem;">Choose your version and settings below</div>
+      </div>
+
+      <!-- ════════════════════════════════════════
+           PRE-CONNECT PANEL
+      ════════════════════════════════════════ -->
+      <div id="preconnect-panel">
+        <div class="preconnect-inner">
+          <div class="preconnect-icon">⛏️</div>
+          <div class="preconnect-title">Launch <span class="accent">Minecraft</span></div>
+
+          <!-- VERSION DROPDOWN -->
+          <div class="config-section">
+            <div class="config-section-label">Minecraft Version</div>
+            <div class="ep-dropdown" id="dd-version">
+              <button class="ep-dropdown-trigger" id="dd-version-trigger" onclick="toggleDropdown('dd-version')">
+                <div class="trigger-left">
+                  <span class="trigger-icon">🟩</span>
+                  <div class="trigger-text">
+                    <span class="trigger-name">1.20.4</span>
+                    <span class="trigger-sub">Latest Stable · Java Edition</span>
+                  </div>
+                </div>
+                <span class="ep-dropdown-arrow">▼</span>
+              </button>
+              <div class="ep-dropdown-menu" id="dd-version-menu">
+                <div class="ep-dropdown-item selected" onclick="selectDropdown('version','1.20.4','🟩','1.20.4','Latest Stable · Java Edition','RECOMMENDED','badge-green',this)">
+                  <span class="item-icon">🟩</span>
+                  <div class="item-body"><div class="item-name">1.20.4</div><div class="item-desc">Latest Stable · Java Edition</div></div>
+                  <span class="item-badge badge-green">RECOMMENDED</span>
+                </div>
+                <div class="ep-dropdown-item" onclick="selectDropdown('version','1.20.2','📦','1.20.2','Trails &amp; Tales · Java Edition','STABLE','badge-blue',this)">
+                  <span class="item-icon">📦</span>
+                  <div class="item-body"><div class="item-name">1.20.2</div><div class="item-desc">Trails &amp; Tales · Java Edition</div></div>
+                  <span class="item-badge badge-blue">STABLE</span>
+                </div>
+                <div class="ep-dropdown-item" onclick="selectDropdown('version','1.20.1','🏛️','1.20.1','Trails &amp; Tales · Java Edition','STABLE','badge-blue',this)">
+                  <span class="item-icon">🏛️</span>
+                  <div class="item-body"><div class="item-name">1.20.1</div><div class="item-desc">Trails &amp; Tales · Java Edition</div></div>
+                  <span class="item-badge badge-blue">STABLE</span>
+                </div>
+                <div class="ep-dropdown-item" onclick="selectDropdown('version','1.19.4','🐸','1.19.4','The Wild Update · Java Edition','LEGACY','badge-yellow',this)">
+                  <span class="item-icon">🐸</span>
+                  <div class="item-body"><div class="item-name">1.19.4</div><div class="item-desc">The Wild Update · Java Edition</div></div>
+                  <span class="item-badge badge-yellow">LEGACY</span>
+                </div>
+                <div class="ep-dropdown-item" onclick="selectDropdown('version','1.18.2','🏔️','1.18.2','Caves &amp; Cliffs Part II','LEGACY','badge-yellow',this)">
+                  <span class="item-icon">🏔️</span>
+                  <div class="item-body"><div class="item-name">1.18.2</div><div class="item-desc">Caves &amp; Cliffs Part II</div></div>
+                  <span class="item-badge badge-yellow">LEGACY</span>
+                </div>
+                <div class="ep-dropdown-item" onclick="selectDropdown('version','1.16.5','🔥','1.16.5','Nether Update · Java Edition','CLASSIC','badge-gray',this)">
+                  <span class="item-icon">🔥</span>
+                  <div class="item-body"><div class="item-name">1.16.5</div><div class="item-desc">Nether Update · Java Edition</div></div>
+                  <span class="item-badge badge-gray">CLASSIC</span>
+                </div>
+                <div class="ep-dropdown-item" onclick="selectDropdown('version','1.12.2','🕹️','1.12.2','World of Color Update','CLASSIC','badge-gray',this)">
+                  <span class="item-icon">🕹️</span>
+                  <div class="item-body"><div class="item-name">1.12.2</div><div class="item-desc">World of Color Update</div></div>
+                  <span class="item-badge badge-gray">CLASSIC</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- MOD LOADER DROPDOWN -->
+          <div class="config-section">
+            <div class="config-section-label">Mod Loader / Modpack</div>
+            <div class="ep-dropdown" id="dd-modpack">
+              <button class="ep-dropdown-trigger" id="dd-modpack-trigger" onclick="toggleDropdown('dd-modpack')">
+                <div class="trigger-left">
+                  <span class="trigger-icon">🌿</span>
+                  <div class="trigger-text">
+                    <span class="trigger-name">Vanilla</span>
+                    <span class="trigger-sub">No mods · Pure Minecraft</span>
+                  </div>
+                </div>
+                <span class="ep-dropdown-arrow">▼</span>
+              </button>
+              <div class="ep-dropdown-menu" id="dd-modpack-menu">
+                <div class="ep-dropdown-item selected" onclick="selectDropdown('modpack','vanilla','🌿','Vanilla','No mods · Pure Minecraft','CLEAN','badge-green',this)">
+                  <span class="item-icon">🌿</span>
+                  <div class="item-body"><div class="item-name">Vanilla</div><div class="item-desc">No mods · Pure Minecraft</div></div>
+                  <span class="item-badge badge-green">CLEAN</span>
+                </div>
+                <div class="ep-dropdown-item" onclick="selectDropdown('modpack','optifine','✨','OptiFine HD','HD Textures · Shaders · FPS Boost','POPULAR','badge-blue',this)">
+                  <span class="item-icon">✨</span>
+                  <div class="item-body"><div class="item-name">OptiFine HD</div><div class="item-desc">HD Textures · Shaders · FPS Boost</div></div>
+                  <span class="item-badge badge-blue">POPULAR</span>
+                </div>
+                <div class="ep-dropdown-item" onclick="selectDropdown('modpack','fabric','🧵','Fabric + QoL','Sodium · Iris · Lithium · More','FAST','badge-green',this)">
+                  <span class="item-icon">🧵</span>
+                  <div class="item-body"><div class="item-name">Fabric + QoL</div><div class="item-desc">Sodium · Iris · Lithium · More</div></div>
+                  <span class="item-badge badge-green">FAST</span>
+                </div>
+                <div class="ep-dropdown-item" onclick="selectDropdown('modpack','forge','🔨','Forge','Full mod support · 1000s of mods','MODDED','badge-yellow',this)">
+                  <span class="item-icon">🔨</span>
+                  <div class="item-body"><div class="item-name">Forge</div><div class="item-desc">Full mod support · 1000s of mods</div></div>
+                  <span class="item-badge badge-yellow">MODDED</span>
+                </div>
+                <div class="ep-dropdown-item" onclick="selectDropdown('modpack','rlcraft','⚔️','RLCraft','Hardcore survival · Forge modpack','HARDCORE','badge-red',this)">
+                  <span class="item-icon">⚔️</span>
+                  <div class="item-body"><div class="item-name">RLCraft</div><div class="item-desc">Hardcore survival · Forge modpack</div></div>
+                  <span class="item-badge badge-red">HARDCORE</span>
+                </div>
+                <div class="ep-dropdown-item" onclick="selectDropdown('modpack','skyfactory','🌌','SkyFactory 4','Skyblock · Automation · Magic','POPULAR','badge-blue',this)">
+                  <span class="item-icon">🌌</span>
+                  <div class="item-body"><div class="item-name">SkyFactory 4</div><div class="item-desc">Skyblock · Automation · Magic</div></div>
+                  <span class="item-badge badge-blue">POPULAR</span>
+                </div>
+                <div class="ep-dropdown-item" onclick="selectDropdown('modpack','aternos','🏡','Create Above &amp; Beyond','Automation · Engineering · Create mod','MODDED','badge-yellow',this)">
+                  <span class="item-icon">🏡</span>
+                  <div class="item-body"><div class="item-name">Create Above &amp; Beyond</div><div class="item-desc">Automation · Engineering · Create mod</div></div>
+                  <span class="item-badge badge-yellow">MODDED</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- GAME MODE DROPDOWN -->
+          <div class="config-section">
+            <div class="config-section-label">Game Mode</div>
+            <div class="ep-dropdown" id="dd-gamemode">
+              <button class="ep-dropdown-trigger" id="dd-gamemode-trigger" onclick="toggleDropdown('dd-gamemode')">
+                <div class="trigger-left">
+                  <span class="trigger-icon">🧱</span>
+                  <div class="trigger-text">
+                    <span class="trigger-name">Survival</span>
+                    <span class="trigger-sub">Gather resources, fight mobs</span>
+                  </div>
+                </div>
+                <span class="ep-dropdown-arrow">▼</span>
+              </button>
+              <div class="ep-dropdown-menu" id="dd-gamemode-menu">
+                <div class="ep-dropdown-item selected" onclick="selectDropdown('gamemode','survival','🧱','Survival','Gather resources, fight mobs, stay alive','','',this)">
+                  <span class="item-icon">🧱</span>
+                  <div class="item-body"><div class="item-name">Survival</div><div class="item-desc">Gather resources, fight mobs, stay alive</div></div>
+                </div>
+                <div class="ep-dropdown-item" onclick="selectDropdown('gamemode','creative','🎨','Creative','Unlimited resources · Fly · Build freely','','',this)">
+                  <span class="item-icon">🎨</span>
+                  <div class="item-body"><div class="item-name">Creative</div><div class="item-desc">Unlimited resources · Fly · Build freely</div></div>
+                </div>
+                <div class="ep-dropdown-item" onclick="selectDropdown('gamemode','adventure','🗺️','Adventure','Custom maps · Command-restricted play','','',this)">
+                  <span class="item-icon">🗺️</span>
+                  <div class="item-body"><div class="item-name">Adventure</div><div class="item-desc">Custom maps · Command-restricted play</div></div>
+                </div>
+                <div class="ep-dropdown-item" onclick="selectDropdown('gamemode','hardcore','💀','Hardcore','One life · Permadeath · Max difficulty','','',this)">
+                  <span class="item-icon">💀</span>
+                  <div class="item-body"><div class="item-name">Hardcore</div><div class="item-desc">One life only · Permadeath · Max difficulty</div></div>
+                </div>
+                <div class="ep-dropdown-item" onclick="selectDropdown('gamemode','spectator','👁️','Spectator','Observe the world · No interaction','','',this)">
+                  <span class="item-icon">👁️</span>
+                  <div class="item-body"><div class="item-name">Spectator</div><div class="item-desc">Observe the world · No interaction</div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- REGION + RESOLUTION (side-by-side dropdowns) -->
+          <div class="config-row">
+            <div class="config-card-sm">
+              <label>Cloud Region</label>
+              <div class="ep-dropdown" id="dd-region">
+                <button class="ep-dropdown-trigger" id="dd-region-trigger" onclick="toggleDropdown('dd-region')" style="padding:8px 10px;">
+                  <div class="trigger-left" style="gap:7px;">
+                    <span class="trigger-icon" style="font-size:14px;">🌐</span>
+                    <span class="trigger-name" style="font-size:0.82rem;">Auto (Best)</span>
+                  </div>
+                  <span class="ep-dropdown-arrow">▼</span>
+                </button>
+                <div class="ep-dropdown-menu" id="dd-region-menu">
+                  <div class="ep-dropdown-item selected" onclick="selectDropdown('region','auto','🌐','Auto (Best)','','','',this)">
+                    <span class="item-icon" style="font-size:14px;">🌐</span>
+                    <div class="item-body"><div class="item-name" style="font-size:0.82rem;">Auto (Best ping)</div></div>
+                  </div>
+                  <div class="ep-dropdown-item" onclick="selectDropdown('region','us-east','🇺🇸','US East','','','',this)">
+                    <span class="item-icon" style="font-size:14px;">🇺🇸</span>
+                    <div class="item-body"><div class="item-name" style="font-size:0.82rem;">US East · NYC</div><div class="item-desc">~18ms</div></div>
+                  </div>
+                  <div class="ep-dropdown-item" onclick="selectDropdown('region','us-west','🇺🇸','US West','','','',this)">
+                    <span class="item-icon" style="font-size:14px;">🇺🇸</span>
+                    <div class="item-body"><div class="item-name" style="font-size:0.82rem;">US West · LA</div><div class="item-desc">~22ms</div></div>
+                  </div>
+                  <div class="ep-dropdown-item" onclick="selectDropdown('region','eu-west','🇪🇺','EU West','','','',this)">
+                    <span class="item-icon" style="font-size:14px;">🇪🇺</span>
+                    <div class="item-body"><div class="item-name" style="font-size:0.82rem;">EU West · AMS</div><div class="item-desc">~31ms</div></div>
+                  </div>
+                  <div class="ep-dropdown-item" onclick="selectDropdown('region','ap-sea','🌏','Asia Pacific','','','',this)">
+                    <span class="item-icon" style="font-size:14px;">🌏</span>
+                    <div class="item-body"><div class="item-name" style="font-size:0.82rem;">Asia · Singapore</div><div class="item-desc">~55ms</div></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="config-card-sm">
+              <label>Resolution</label>
+              <div class="ep-dropdown" id="dd-res">
+                <button class="ep-dropdown-trigger" id="dd-res-trigger" onclick="toggleDropdown('dd-res')" style="padding:8px 10px;">
+                  <div class="trigger-left" style="gap:7px;">
+                    <span class="trigger-icon" style="font-size:14px;">🖥️</span>
+                    <span class="trigger-name" style="font-size:0.82rem;">1080p FHD</span>
+                  </div>
+                  <span class="ep-dropdown-arrow">▼</span>
+                </button>
+                <div class="ep-dropdown-menu" id="dd-res-menu">
+                  <div class="ep-dropdown-item" onclick="selectDropdown('res','720p','🖥️','720p HD','','','',this)">
+                    <span class="item-icon" style="font-size:14px;">🖥️</span>
+                    <div class="item-body"><div class="item-name" style="font-size:0.82rem;">720p HD</div><div class="item-desc">1280×720</div></div>
+                  </div>
+                  <div class="ep-dropdown-item selected" onclick="selectDropdown('res','1080p','🖥️','1080p FHD','','','',this)">
+                    <span class="item-icon" style="font-size:14px;">🖥️</span>
+                    <div class="item-body"><div class="item-name" style="font-size:0.82rem;">1080p FHD</div><div class="item-desc">1920×1080</div></div>
+                  </div>
+                  <div class="ep-dropdown-item" onclick="selectDropdown('res','1440p','🖥️','1440p QHD','','','',this)">
+                    <span class="item-icon" style="font-size:14px;">🖥️</span>
+                    <div class="item-body"><div class="item-name" style="font-size:0.82rem;">1440p QHD</div><div class="item-desc">2560×1440</div></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- LAUNCH BUTTON -->
+          <div class="connect-actions">
+            <button class="btn btn-primary btn-lg" onclick="startConnect()" style="width:100%;justify-content:center;">
+              ▶ Launch Minecraft
+            </button>
+            <button class="btn btn-ghost" onclick="window.location.href='index.html'" style="width:100%;justify-content:center;">
+              ← Back to Home
+            </button>
+          </div>
+
+          <!-- Config summary chips -->
+          <div id="config-summary">
+            <span class="summary-chip" id="chip-version">1.20.4</span>
+            <span class="summary-chip" id="chip-modpack">Vanilla</span>
+            <span class="summary-chip" id="chip-gamemode">Survival</span>
+            <span class="summary-chip" id="chip-region">Auto</span>
+            <span class="summary-chip" id="chip-res">1080p</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════════════════════════════════
+           CONNECTING PANEL
+      ════════════════════════════════════════ -->
+      <div id="connecting-panel">
+        <div style="font-family:'Rajdhani',sans-serif;font-size:1.85rem;font-weight:700;color:var(--green);text-align:center;">
+          Starting Minecraft...
+        </div>
+
+        <div class="launch-chips" id="launch-chips"></div>
+
+        <div class="connect-steps" id="connect-steps">
+          <div class="connect-step"><div class="step-icon" id="step-1">○</div><span class="step-label" id="step-1-txt">Allocating cloud node...</span></div>
+          <div class="connect-step"><div class="step-icon" id="step-2">○</div><span class="step-label" id="step-2-txt">Downloading server JAR...</span></div>
+          <div class="connect-step"><div class="step-icon" id="step-3">○</div><span class="step-label" id="step-3-txt">Launching JVM process...</span></div>
+          <div class="connect-step"><div class="step-icon" id="step-4">○</div><span class="step-label" id="step-4-txt">Generating world...</span></div>
+          <div class="connect-step"><div class="step-icon" id="step-5">○</div><span class="step-label" id="step-5-txt">Establishing WebRTC stream...</span></div>
+          <div class="connect-step"><div class="step-icon" id="step-6">○</div><span class="step-label" id="step-6-txt">Loading into game...</span></div>
+        </div>
+
+        <div id="startup-console"></div>
+
+        <button class="btn btn-ghost btn-sm" onclick="cancelConnect()">Cancel</button>
+      </div>
+
+      <!-- Queue Panel -->
+      <div class="queue-panel" id="queue-panel" style="display:none;">
+        <div class="queue-spinner"></div>
+        <div class="queue-title">You're in Queue</div>
+        <div class="queue-pos" id="queue-pos">—</div>
+        <div style="color:var(--text-muted);font-size:0.82rem;">Position in queue</div>
+        <div style="color:var(--text-muted);font-size:0.86rem;margin-top:8px;">
+          Est. wait: <span id="queue-eta" style="color:var(--green);">—</span>
+        </div>
+        <div class="queue-progress"><div class="queue-progress-fill"></div></div>
+        <button class="btn btn-ghost btn-sm" style="margin-top:18px;width:100%;" onclick="leaveQueue()">Leave Queue</button>
+      </div>
+
+      <!-- Minecraft Console (in-stream) -->
+      <div id="mc-console">
+        <div style="color:var(--green);font-weight:700;margin-bottom:5px;font-size:0.68rem;">📋 MINECRAFT LOG</div>
+        <div id="mc-console-lines"></div>
+      </div>
+
+      <!-- Stream Overlay -->
+      <div class="stream-overlay" id="stream-overlay" style="display:none;">
+        <div class="overlay-top">
+          <div class="overlay-stats">
+            <div class="stat-pill"><span class="label">FPS</span><span class="value" id="overlay-fps">—</span></div>
+            <div class="stat-pill"><span class="label">PING</span><span class="value" id="overlay-ping">—</span>ms</div>
+            <div class="stat-pill"><span class="label">↑↓</span><span class="value" id="overlay-bw">—</span>Mbps</div>
+            <div class="stat-pill"><span class="label">MC</span><span class="value" id="overlay-version">—</span></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:7px;">
+            <span class="tag tag-green" id="stream-quality-tag">1080p</span>
+            <div class="live-pill"><div class="live-dot"></div>LIVE</div>
+          </div>
+        </div>
+        <div class="overlay-bottom">
+          <div class="stream-controls">
+            <button class="ctrl-btn" onclick="togglePause()" title="Pause [ESC]">⏸</button>
+            <button class="ctrl-btn" onclick="toggleSettings()" title="Settings">⚙️</button>
+            <button class="ctrl-btn" id="mouse-lock-btn" onclick="toggleMouseLock()" title="Mouse Lock [M]">🖱️</button>
+            <button class="ctrl-btn" onclick="toggleConsole()" title="MC Log [F4]">📋</button>
+            <button class="ctrl-btn" onclick="toggleFullscreen()" title="Fullscreen [F11]">⛶</button>
+          </div>
+          <div class="kb-hints-row">
+            <div class="kb-pair"><span class="kb-key">ESC</span> Menu</div>
+            <div class="kb-pair"><span class="kb-key">F11</span> Full</div>
+            <div class="kb-pair"><span class="kb-key">M</span> Lock</div>
+            <div class="kb-pair"><span class="kb-key">F4</span> Log</div>
+          </div>
+          <button class="btn btn-danger btn-sm" onclick="disconnect()">⏹ Stop</button>
+        </div>
+      </div>
+
+      <!-- Reconnect Banner -->
+      <div id="reconnect-banner">
+        ⚠️ Connection lost.
+        <button onclick="tryReconnect()">Reconnect</button>
+        <button onclick="document.getElementById('reconnect-banner').classList.remove('show')">✕</button>
+      </div>
+
+      <!-- Pause Menu -->
+      <div class="pause-menu" id="pause-menu">
+        <div class="pause-card">
+          <div class="pause-title">⏸ Paused</div>
+          <div class="pause-menu-list">
+            <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="togglePause()">▶ Resume</button>
+            <button class="btn btn-ghost"   style="width:100%;justify-content:center;" onclick="toggleSettings();togglePause()">⚙️ Settings</button>
+            <button class="btn btn-ghost"   style="width:100%;justify-content:center;" onclick="saveSession()">💾 Save Session</button>
+            <button class="btn btn-danger"  style="width:100%;justify-content:center;" onclick="disconnect()">⏹ Stop Minecraft</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Settings Panel -->
+      <div id="settings-panel">
+        <div class="settings-card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+            <div style="font-family:'Rajdhani',sans-serif;font-size:1.15rem;font-weight:700;">Settings</div>
+            <button class="btn btn-ghost btn-icon-sm" onclick="toggleSettings()">✕</button>
+          </div>
+
+          <div class="settings-section-title">Stream</div>
+          <div class="settings-row">
+            <div><div class="settings-label">Video Quality</div></div>
+            <select class="form-input" style="width:110px;padding:6px 10px;" onchange="saveSetting('quality',this.value)">
+              <option>Auto</option><option selected>1080p</option><option>720p</option><option>1440p</option>
+            </select>
+          </div>
+          <div class="settings-row">
+            <div><div class="settings-label">FPS Target</div></div>
+            <select class="form-input" style="width:90px;padding:6px 10px;" onchange="saveSetting('fps',this.value)">
+              <option>30</option><option selected>60</option><option>120</option>
+            </select>
+          </div>
+          <div class="settings-row">
+            <div><div class="settings-label">Show FPS Counter</div></div>
+            <button class="toggle on" onclick="toggleSetting(this,'showFps')"></button>
+          </div>
+          <div class="settings-row">
+            <div><div class="settings-label">Low Latency Mode</div></div>
+            <button class="toggle on" onclick="toggleSetting(this,'lowLatency')"></button>
+          </div>
+
+          <div class="settings-section-title">Minecraft</div>
+          <div class="settings-row">
+            <div><div class="settings-label">Render Distance</div></div>
+            <select class="form-input" style="width:90px;padding:6px 10px;" onchange="saveSetting('renderDist',this.value)">
+              <option>4</option><option>8</option><option selected>12</option><option>16</option><option>32</option>
+            </select>
+          </div>
+          <div class="settings-row">
+            <div><div class="settings-label">Smooth Lighting</div></div>
+            <button class="toggle on" onclick="toggleSetting(this,'smoothLight')"></button>
+          </div>
+          <div class="settings-row">
+            <div><div class="settings-label">Show MC Console</div></div>
+            <button class="toggle" onclick="toggleSetting(this,'showConsole');toggleConsole()"></button>
+          </div>
+
+          <div class="settings-section-title">Input</div>
+          <div class="settings-row">
+            <div><div class="settings-label">Auto Mouse Lock</div></div>
+            <button class="toggle on" onclick="toggleSetting(this,'autoMouseLock')"></button>
+          </div>
+
+          <div class="settings-section-title">Keyboard Shortcuts</div>
+          <div class="kb-hints-row" style="flex-direction:column;align-items:flex-start;gap:9px;margin-top:0;">
+            <div class="kb-pair"><span class="kb-key">ESC</span> Pause / release mouse</div>
+            <div class="kb-pair"><span class="kb-key">F11</span> Fullscreen</div>
+            <div class="kb-pair"><span class="kb-key">M</span> Toggle mouse lock</div>
+            <div class="kb-pair"><span class="kb-key">F3</span> FPS counter</div>
+            <div class="kb-pair"><span class="kb-key">F4</span> Minecraft log</div>
+            <div class="kb-pair"><span class="kb-key">Ctrl+S</span> Save session</div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /stream-area -->
+  </div>
+</div>
+
+<div id="toast-container"></div>
+<script src="script.js"></script>
+<script>
+
+// ═══════════════════════════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════════════════════════
+let streamState = 'idle';
+let mouseLocked = false;
+let fpsInterval = null;
+let reconnectAttempts = 0;
+
+const selections = {
+  version:  { val:'1.20.4',   label:'1.20.4',    icon:'🟩' },
+  modpack:  { val:'vanilla',  label:'Vanilla',    icon:'🌿' },
+  gamemode: { val:'survival', label:'Survival',   icon:'🧱' },
+  region:   { val:'auto',     label:'Auto',       icon:'🌐' },
+  res:      { val:'1080p',    label:'1080p FHD',  icon:'🖥️' },
+};
+
+// ═══════════════════════════════════════════════════════════════════
+//  DROPDOWN SYSTEM
+// ═══════════════════════════════════════════════════════════════════
+function toggleDropdown(ddId) {
+  const menu    = document.getElementById(ddId + '-menu');
+  const trigger = document.getElementById(ddId + '-trigger');
+  const isOpen  = menu.classList.contains('open');
+
+  // Close all
+  document.querySelectorAll('.ep-dropdown-menu.open').forEach(m => m.classList.remove('open'));
+  document.querySelectorAll('.ep-dropdown-trigger.open').forEach(t => t.classList.remove('open'));
+
+  if (!isOpen) {
+    menu.classList.add('open');
+    trigger.classList.add('open');
+  }
+}
+
+function selectDropdown(key, val, icon, name, sub, badge, badgeClass, el) {
+  selections[key] = { val, label: name, icon };
+
+  // Update trigger
+  const trigger = document.getElementById('dd-' + key + '-trigger');
+  if (trigger) {
+    const iconEl = trigger.querySelector('.trigger-icon');
+    const nameEl = trigger.querySelector('.trigger-name');
+    const subEl  = trigger.querySelector('.trigger-sub');
+    if (iconEl) iconEl.textContent = icon;
+    if (nameEl) nameEl.textContent = name;
+    if (subEl && sub) subEl.textContent = sub;
+  }
+
+  // Mark selected
+  const menu = document.getElementById('dd-' + key + '-menu');
+  if (menu) menu.querySelectorAll('.ep-dropdown-item').forEach(i => i.classList.remove('selected'));
+  if (el) el.classList.add('selected');
+
+  // Close menus
+  document.querySelectorAll('.ep-dropdown-menu.open').forEach(m => m.classList.remove('open'));
+  document.querySelectorAll('.ep-dropdown-trigger.open').forEach(t => t.classList.remove('open'));
+
+  // Persist + update chips
+  try { localStorage.setItem('ep_' + key, JSON.stringify({val, label:name, icon})); } catch(e){}
+  updateChips();
+}
+
+// Close on outside click
+document.addEventListener('click', e => {
+  if (!e.target.closest('.ep-dropdown')) {
+    document.querySelectorAll('.ep-dropdown-menu.open').forEach(m => m.classList.remove('open'));
+    document.querySelectorAll('.ep-dropdown-trigger.open').forEach(t => t.classList.remove('open'));
+  }
+});
+
+function updateChips() {
+  const map = { version:'chip-version', modpack:'chip-modpack', gamemode:'chip-gamemode', region:'chip-region', res:'chip-res' };
+  for (const [k, id] of Object.entries(map)) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = selections[k]?.label || '—';
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  MINECRAFT STARTUP SIMULATION
+//  (Real implementation: POST /api/session/start → backend spawns
+//   minecraft_server.jar via child_process, streams stdout over
+//   Socket.IO, captures framebuffer with GStreamer → WebRTC)
+// ═══════════════════════════════════════════════════════════════════
+
+// Simulated MC server log output that mirrors real Minecraft 1.20.4 startup
+function getMCStartupLogs(version, modpack, gamemode) {
+  return [
+    { text: `[Server thread/INFO]: Starting minecraft server version ${version}`, cls:'info', delay:350 },
+    { text: `[Server thread/INFO]: Loading properties`, cls:'info', delay:650 },
+    { text: `[Server thread/INFO]: Default game type: ${gamemode.toUpperCase()}`, cls:'info', delay:950 },
+    { text: `[Server thread/INFO]: Generating keypair`, cls:'info', delay:1200 },
+    { text: `[Server thread/INFO]: Starting Minecraft server on *:25565`, cls:'info', delay:1550 },
+    { text: `[Server thread/INFO]: Using epoll channel type`, cls:'info', delay:1850 },
+    ...(modpack !== 'vanilla' ? [
+      { text: `[FML]: Forge Mod Loader version ${modpack === 'forge' ? '47.2.0' : '0.14.25'} loading`, cls:'info', delay:2100 },
+      { text: `[FML]: Loading ${modpack === 'fabric' ? '12' : '148'} mods`, cls:'info', delay:2400 },
+    ] : []),
+    { text: `[Server thread/INFO]: Preparing level "world"`, cls:'info', delay:2700 },
+    { text: `[Server thread/INFO]: Preparing start region for dimension minecraft:overworld`, cls:'info', delay:3100 },
+    { text: `[Server thread/INFO]: Preparing spawn area: 0%`, cls:'info', delay:3500 },
+    { text: `[Server thread/INFO]: Preparing spawn area: 47%`, cls:'info', delay:4000 },
+    { text: `[Server thread/INFO]: Preparing spawn area: 83%`, cls:'info', delay:4500 },
+    { text: `[Server thread/INFO]: Time elapsed: 4847 ms`, cls:'info', delay:5000 },
+    { text: `[Server thread/INFO]: Done (4.847s)! For help, type "help"`, cls:'done', delay:5400 },
+    { text: `[EasyProxi]: WebRTC bridge connected on port 8765`, cls:'done', delay:5800 },
+    { text: `[EasyProxi]: Framebuffer capture active — streaming at 1080p60`, cls:'done', delay:6100 },
+  ];
+}
+
+const STEP_SEQUENCE = [
+  { id:1, message:'Allocating cloud GPU node (us-east-1)...',      delay:250 },
+  { id:2, message:`Fetching minecraft_server.jar...`,               delay:1100 },
+  { id:3, message:'Launching JVM (Java 21, 2 GB heap)...',          delay:2500 },
+  { id:4, message:'Generating world seed & spawn chunks...',         delay:3600 },
+  { id:5, message:'Establishing WebRTC peer connection...',          delay:5200 },
+  { id:6, message:'Streaming to your browser...',                    delay:6500 },
+];
+
+// ═══════════════════════════════════════════════════════════════════
+//  LAUNCH FLOW
+// ═══════════════════════════════════════════════════════════════════
+function startConnect() {
+  const inQueue = Math.random() < 0.22;
+  if (inQueue) { showQueue(); return; }
+  showConnecting();
+}
+
+function showQueue() {
+  document.getElementById('preconnect-panel').style.display = 'none';
+  document.getElementById('queue-panel').style.display = 'block';
+  streamState = 'queued';
+  let pos = 2 + Math.floor(Math.random() * 7);
+  document.getElementById('queue-pos').textContent = pos;
+  document.getElementById('queue-eta').textContent = `~${pos * 28}s`;
+  showToast(`Queue position: ${pos} — hold tight!`, 'info');
+  const qi = setInterval(() => {
+    pos--;
+    document.getElementById('queue-pos').textContent = Math.max(0, pos);
+    document.getElementById('queue-eta').textContent = pos > 0 ? `~${pos * 28}s` : 'Starting now...';
+    if (pos <= 0) { clearInterval(qi); document.getElementById('queue-panel').style.display = 'none'; showConnecting(); }
+  }, 2800);
+}
+
+function leaveQueue() {
+  document.getElementById('queue-panel').style.display = 'none';
+  document.getElementById('preconnect-panel').style.display = 'flex';
+  streamState = 'idle';
+  showToast('Left queue', 'info');
+}
+
+function showConnecting() {
+  document.getElementById('preconnect-panel').style.display = 'none';
+  document.getElementById('connecting-panel').classList.add('show');
+  streamState = 'connecting';
+
+  // Update step 2 text with real version
+  document.getElementById('step-2-txt').textContent =
+    `Fetching minecraft_server.${selections.version.val}.jar...`;
+
+  // Launch chips
+  document.getElementById('launch-chips').innerHTML = [
+    selections.version.label,
+    selections.modpack.label,
+    selections.gamemode.label,
+    selections.res.label,
+    selections.region.label,
+  ].map(l => `<span class="launch-chip">${l}</span>`).join('');
+
+  // Reset steps
+  for (let i = 1; i <= 6; i++) {
+    document.getElementById(`step-${i}`).className = 'step-icon';
+    document.getElementById(`step-${i}`).textContent = '○';
+    document.getElementById(`step-${i}-txt`).className = 'step-label';
+  }
+
+  // Animate steps sequentially
+  STEP_SEQUENCE.forEach(step => {
+    setTimeout(() => {
+      if (step.id > 1) {
+        document.getElementById(`step-${step.id-1}`).className = 'step-icon done';
+        document.getElementById(`step-${step.id-1}`).textContent = '✓';
+        document.getElementById(`step-${step.id-1}-txt`).className = 'step-label done';
+      }
+      const icon = document.getElementById(`step-${step.id}`);
+      icon.className = 'step-icon active';
+      icon.textContent = '';
+      const txt = document.getElementById(`step-${step.id}-txt`);
+      txt.className = 'step-label active';
+      txt.textContent = step.message;
+    }, step.delay);
+  });
+
+  // Fill startup console with real-looking MC log
+  const consolEl = document.getElementById('startup-console');
+  consolEl.innerHTML = '';
+  const logs = getMCStartupLogs(selections.version.val, selections.modpack.val, selections.gamemode.val);
+  logs.forEach(log => {
+    setTimeout(() => {
+      const line = document.createElement('div');
+      line.className = `mc-log-line ${log.cls}`;
+      line.textContent = log.text;
+      consolEl.appendChild(line);
+      consolEl.scrollTop = consolEl.scrollHeight;
+    }, log.delay);
+  });
+
+  // All done → enter streaming state
+  setTimeout(() => {
+    document.getElementById('step-6').className = 'step-icon done';
+    document.getElementById('step-6').textContent = '✓';
+    document.getElementById('step-6-txt').className = 'step-label done';
+    document.getElementById('step-6-txt').textContent = 'Stream is live!';
+  }, 7000);
+
+  setTimeout(() => {
+    document.getElementById('connecting-panel').classList.remove('show');
+    consolEl.innerHTML = '';
+    startStreaming();
+  }, 7800);
+}
+
+function cancelConnect() {
+  document.getElementById('connecting-panel').classList.remove('show');
+  document.getElementById('preconnect-panel').style.display = 'flex';
+  document.getElementById('startup-console').innerHTML = '';
+  streamState = 'idle';
+}
+
+// ── Streaming ─────────────────────────────────────────────────────
+function startStreaming() {
+  streamState = 'streaming';
+  document.getElementById('stream-overlay').style.display = 'block';
+  document.getElementById('fps-counter').style.display = 'block';
+  document.getElementById('mc-status-badge').classList.add('show');
+  document.getElementById('mc-status-text').textContent =
+    `MC ${selections.version.val} · ${selections.modpack.label}`;
+  document.getElementById('overlay-version').textContent = selections.version.val;
+  document.getElementById('stream-quality-tag').textContent = selections.res.label;
+
+  showToast(`🎮 Minecraft ${selections.version.val} is live!`, 'success');
+  startMCLogStream();
+
+  fpsInterval = setInterval(() => {
+    const fps  = 54 + Math.floor(Math.random() * 12);
+    const ping = 15 + Math.floor(Math.random() * 24);
+    const bw   = (10 + Math.random() * 10).toFixed(1);
+    document.getElementById('fps-val').textContent = fps;
+    document.getElementById('overlay-fps').textContent = fps;
+    document.getElementById('overlay-ping').textContent = ping;
+    document.getElementById('overlay-bw').textContent = bw;
+    document.getElementById('overlay-fps').style.color  = fps  >= 55 ? 'var(--green)' : fps  >= 40 ? 'var(--yellow)' : 'var(--red)';
+    document.getElementById('overlay-ping').style.color = ping < 30  ? 'var(--green)' : ping < 60  ? 'var(--yellow)' : 'var(--red)';
+  }, 1000);
+
+  // Auto mouse lock on stream click
+  document.getElementById('stream-area').addEventListener('click', () => {
+    if (streamState === 'streaming') requestMouseLock();
+  }, { once: false });
+}
+
+// ── MC Log stream ──────────────────────────────────────────────────
+const ONGOING_MC_LOGS = [
+  { text:'Player EasyProxi joined the game',       cls:'done' },
+  { text:'Saving chunks for level \'world\'',      cls:'info' },
+  { text:'Autosave completed',                     cls:'info' },
+  { text:'Can\'t keep up! Is server overloaded?',  cls:'warn' },
+  { text:'Player EasyProxi issued: /gamemode creative', cls:'info' },
+  { text:'Player EasyProxi issued: /time set day', cls:'info' },
+  { text:'Player EasyProxi issued: /tp 0 64 0',    cls:'info' },
+  { text:'[EasyProxi]: Frame rate: 60fps @ 1080p', cls:'done' },
+];
+
+let mcLogIdx = 0;
+function appendMCLog(text, cls = 'info') {
+  const linesEl = document.getElementById('mc-console-lines');
+  if (!linesEl) return;
+  const line = document.createElement('div');
+  line.className = `mc-log-line ${cls}`;
+  const t = new Date().toLocaleTimeString('en-US', { hour12:false });
+  line.textContent = `[${t}] ${text}`;
+  linesEl.appendChild(line);
+  if (linesEl.children.length > 60) linesEl.removeChild(linesEl.firstChild);
+  linesEl.parentElement.scrollTop = linesEl.parentElement.scrollHeight;
+}
+
+function startMCLogStream() {
+  const interval = setInterval(() => {
+    if (streamState !== 'streaming') { clearInterval(interval); return; }
+    const entry = ONGOING_MC_LOGS[mcLogIdx % ONGOING_MC_LOGS.length];
+    appendMCLog(entry.text, entry.cls);
+    mcLogIdx++;
+  }, 7000 + Math.random() * 5000);
+}
+
+function toggleConsole() {
+  document.getElementById('mc-console').classList.toggle('show');
+}
+
+// ── Controls ──────────────────────────────────────────────────────
+function disconnect() {
+  clearInterval(fpsInterval);
+  streamState = 'idle';
+  document.getElementById('stream-overlay').style.display = 'none';
+  document.getElementById('fps-counter').style.display = 'none';
+  document.getElementById('mc-status-badge').classList.remove('show');
+  document.getElementById('mc-console').classList.remove('show');
+  document.getElementById('pause-menu').classList.remove('show');
+  document.getElementById('preconnect-panel').style.display = 'flex';
+  document.getElementById('mc-console-lines').innerHTML = '';
+  releaseMouseLock();
+  showToast('Minecraft stopped', 'info');
+}
+
+function tryReconnect() {
+  reconnectAttempts++;
+  document.getElementById('reconnect-banner').classList.remove('show');
+  showToast(`Reconnecting... (attempt ${reconnectAttempts})`, 'warning');
+  setTimeout(() => showConnecting(), 600);
+}
+
+function togglePause() {
+  document.getElementById('pause-menu').classList.toggle('show');
+  if (document.getElementById('pause-menu').classList.contains('show')) releaseMouseLock();
+}
+
+function toggleSettings() { document.getElementById('settings-panel').classList.toggle('show'); }
+
+function requestMouseLock() {
+  document.getElementById('stream-area').requestPointerLock?.();
+  mouseLocked = true;
+  document.getElementById('mouse-lock-btn').style.color = 'var(--green)';
+}
+function releaseMouseLock() {
+  document.exitPointerLock?.();
+  mouseLocked = false;
+  if (document.getElementById('mouse-lock-btn'))
+    document.getElementById('mouse-lock-btn').style.color = '';
+}
+function toggleMouseLock() { if (mouseLocked) releaseMouseLock(); else requestMouseLock(); }
+function toggleFullscreen() {
+  if (!document.fullscreenElement) document.getElementById('stream-area').requestFullscreen?.();
+  else document.exitFullscreen?.();
+}
+function saveSession() { showToast('Session saved to cloud ✓', 'success'); }
+
+function saveSetting(k,v) { try { localStorage.setItem('ep_'+k,v); } catch(e){} }
+function toggleSetting(btn,k) { btn.classList.toggle('on'); saveSetting(k, btn.classList.contains('on')?'true':'false'); }
+
+// Keyboard shortcuts
+document.addEventListener('keydown', e => {
+  if (streamState !== 'streaming') return;
+  if (e.key === 'Escape') {
+    if (document.getElementById('settings-panel').classList.contains('show')) { toggleSettings(); return; }
+    togglePause(); return;
+  }
+  if (e.key === 'F11') { e.preventDefault(); toggleFullscreen(); }
+  if (e.key === 'm' || e.key === 'M') toggleMouseLock();
+  if (e.key === 'F3') { e.preventDefault(); const f=document.getElementById('fps-counter'); f.style.display=f.style.display==='none'?'block':'none'; }
+  if (e.key === 'F4') { e.preventDefault(); toggleConsole(); }
+  if (e.ctrlKey && e.key === 's') { e.preventDefault(); saveSession(); }
+});
+
+document.addEventListener('pointerlockchange', () => {
+  mouseLocked = !!document.pointerLockElement;
+  const btn = document.getElementById('mouse-lock-btn');
+  if (btn) btn.style.color = mouseLocked ? 'var(--green)' : '';
+});
+
+// Init
+document.addEventListener('DOMContentLoaded', () => {
+  updateChips();
+  // Restore saved selections
+  ['version','modpack','gamemode','region','res'].forEach(k => {
+    try {
+      const saved = localStorage.getItem('ep_' + k);
+      if (saved) { const p = JSON.parse(saved); selections[k] = p; }
+    } catch(e) {}
+  });
+  updateChips();
+
+  // Live count
+  let lc = 1820 + Math.floor(Math.random()*200);
+  document.getElementById('live-count').textContent = lc.toLocaleString();
+  setInterval(() => {
+    lc += Math.floor(Math.random()*5)-2;
+    lc = Math.max(1500,lc);
+    document.getElementById('live-count').textContent = lc.toLocaleString();
+  }, 4000);
+});
+</script>
+</body>
+</html>
