@@ -1,0 +1,42 @@
+services:
+  # ─── Frontend (Render Static Site) ─────────────────────────────────────────
+  - type: web
+    name: easyproxi-frontend
+    env: static
+    buildCommand: echo "No build required"
+    staticPublishPath: ./frontend
+    headers:
+      - path: /*
+        name: X-Frame-Options
+        value: SAMEORIGIN
+      - path: /*.js
+        name: Cache-Control
+        value: public, max-age=86400
+      - path: /*.css
+        name: Cache-Control
+        value: public, max-age=86400
+    routes:
+      - type: rewrite
+        source: /api/*
+        destination: https://easyproxi-backend.onrender.com/api/:splat
+      - type: rewrite
+        source: /*
+        destination: /index.html
+
+  # ─── Backend (Render Web Service) ──────────────────────────────────────────
+  - type: web
+    name: easyproxi-backend
+    env: node
+    region: oregon
+    plan: free
+    buildCommand: cd backend && npm install
+    startCommand: node backend/server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: FRONTEND_URL
+        value: https://easyproxi-frontend.onrender.com
+    healthCheckPath: /api/health
+    autoDeploy: true

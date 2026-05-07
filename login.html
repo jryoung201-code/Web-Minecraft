@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Sign In — Minecraft EasyProxi</title>
+  <link rel="stylesheet" href="style.css"/>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%234ade80'/><text y='24' font-size='22' x='4'>🌿</text></svg>"/>
+</head>
+<body>
+
+<div class="bg-grid"></div>
+<div class="bg-orb bg-orb-1"></div>
+<div class="bg-orb bg-orb-2"></div>
+<canvas id="particles-canvas"></canvas>
+
+<!-- Nav -->
+<nav class="nav">
+  <a href="index.html" class="nav-logo">
+    <span class="logo-icon">🌿</span>
+    EASYPROXI
+  </a>
+  <ul class="nav-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="play.html">Play</a></li>
+  </ul>
+  <div class="nav-actions">
+    <div class="live-pill"><div class="live-dot"></div>Online</div>
+  </div>
+</nav>
+
+<div class="login-page" style="position:relative;z-index:1;">
+  <div class="glass login-card" id="login-card">
+    <!-- Tab Toggle -->
+    <div style="display:flex;gap:0;margin-bottom:28px;background:rgba(255,255,255,0.04);border-radius:10px;padding:4px;">
+      <button id="tab-login" onclick="showTab('login')"
+        style="flex:1;padding:8px;border-radius:8px;border:none;cursor:pointer;font-family:'Outfit',sans-serif;font-size:0.9rem;font-weight:600;background:var(--green);color:#080c10;transition:all 0.2s;">
+        Sign In
+      </button>
+      <button id="tab-register" onclick="showTab('register')"
+        style="flex:1;padding:8px;border-radius:8px;border:none;cursor:pointer;font-family:'Outfit',sans-serif;font-size:0.9rem;font-weight:600;background:transparent;color:var(--text-muted);transition:all 0.2s;">
+        Register
+      </button>
+    </div>
+
+    <!-- Login Form -->
+    <div id="form-login">
+      <div class="login-title">Welcome back 👋</div>
+      <div class="login-sub">Sign in to access your cloud sessions and settings.</div>
+
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input type="email" class="form-input" id="login-email" placeholder="you@example.com" autocomplete="email"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <div style="position:relative;">
+          <input type="password" class="form-input" id="login-password" placeholder="••••••••" autocomplete="current-password" style="padding-right:44px;"/>
+          <button onclick="togglePassword('login-password')"
+            style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:16px;">
+            👁️
+          </button>
+        </div>
+      </div>
+
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
+        <label style="display:flex;align-items:center;gap:8px;font-size:0.85rem;color:var(--text-muted);cursor:pointer;">
+          <input type="checkbox" style="accent-color:var(--green);" id="remember-me"/> Remember me
+        </label>
+        <a href="#" style="font-size:0.85rem;color:var(--green);text-decoration:none;" onclick="forgotPassword()">Forgot password?</a>
+      </div>
+
+      <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="doLogin()" id="login-btn">
+        Sign In
+      </button>
+
+      <div class="form-divider">or</div>
+
+      <a class="social-btn" onclick="socialLogin('Microsoft')">
+        <span>🟦</span> Continue with Microsoft
+      </a>
+      <a class="social-btn" onclick="socialLogin('Google')">
+        <span>🔴</span> Continue with Google
+      </a>
+      <a class="social-btn" onclick="socialLogin('Discord')">
+        <span>🟣</span> Continue with Discord
+      </a>
+
+      <div style="text-align:center;margin-top:20px;font-size:0.85rem;color:var(--text-muted);">
+        No account? <a href="#" onclick="showTab('register')" style="color:var(--green);text-decoration:none;">Create one free</a>
+      </div>
+    </div>
+
+    <!-- Register Form -->
+    <div id="form-register" style="display:none;">
+      <div class="login-title">Create Account ✨</div>
+      <div class="login-sub">Join EasyProxi and start playing Minecraft anywhere.</div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="form-group">
+          <label class="form-label">First Name</label>
+          <input type="text" class="form-input" id="reg-first" placeholder="Steve"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Last Name</label>
+          <input type="text" class="form-input" id="reg-last" placeholder="Alex"/>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input type="email" class="form-input" id="reg-email" placeholder="you@example.com"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Username</label>
+        <input type="text" class="form-input" id="reg-username" placeholder="CreeperSlayer99"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <div style="position:relative;">
+          <input type="password" class="form-input" id="reg-password" placeholder="Min 8 characters" oninput="checkPassword(this.value)" style="padding-right:44px;"/>
+          <button onclick="togglePassword('reg-password')"
+            style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:16px;">
+            👁️
+          </button>
+        </div>
+        <!-- Password strength -->
+        <div style="margin-top:8px;height:3px;background:rgba(255,255,255,0.06);border-radius:99px;overflow:hidden;">
+          <div id="pw-strength-bar" style="height:100%;width:0%;transition:all 0.3s;border-radius:99px;background:var(--red);"></div>
+        </div>
+        <div id="pw-strength-txt" style="font-size:0.72rem;color:var(--text-muted);margin-top:4px;"></div>
+      </div>
+
+      <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:20px;">
+        <input type="checkbox" id="agree-terms" style="accent-color:var(--green);margin-top:3px;"/>
+        <label for="agree-terms" style="font-size:0.83rem;color:var(--text-muted);line-height:1.5;">
+          I agree to the <a href="#" style="color:var(--green);text-decoration:none;">Terms of Service</a> and <a href="#" style="color:var(--green);text-decoration:none;">Privacy Policy</a>.
+        </label>
+      </div>
+
+      <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="doRegister()" id="register-btn">
+        Create Account
+      </button>
+
+      <div style="text-align:center;margin-top:20px;font-size:0.85rem;color:var(--text-muted);">
+        Already have one? <a href="#" onclick="showTab('login')" style="color:var(--green);text-decoration:none;">Sign in</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right panel decorative (hidden on mobile) -->
+  <div style="position:absolute;right:10%;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:16px;z-index:0;opacity:0.6;" class="login-deco">
+    <div class="glass" style="padding:16px 20px;border-radius:12px;font-size:0.8rem;width:220px;">
+      <div style="color:var(--green);font-weight:700;margin-bottom:6px;">☁️ Your Sessions</div>
+      <div style="color:var(--text-muted);">Session state saved to cloud. Resume any time.</div>
+    </div>
+    <div class="glass" style="padding:16px 20px;border-radius:12px;font-size:0.8rem;width:220px;">
+      <div style="color:var(--green);font-weight:700;margin-bottom:6px;">⚡ Priority Queue</div>
+      <div style="color:var(--text-muted);">Account holders get priority server access.</div>
+    </div>
+    <div class="glass" style="padding:16px 20px;border-radius:12px;font-size:0.8rem;width:220px;">
+      <div style="color:var(--green);font-weight:700;margin-bottom:6px;">🎮 Saved Settings</div>
+      <div style="color:var(--text-muted);">Version, mods, keybinds sync across devices.</div>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+<script src="script.js"></script>
+<script>
+function showTab(tab) {
+  document.getElementById('form-login').style.display = tab === 'login' ? 'block' : 'none';
+  document.getElementById('form-register').style.display = tab === 'register' ? 'block' : 'none';
+  document.getElementById('tab-login').style.background = tab === 'login' ? 'var(--green)' : 'transparent';
+  document.getElementById('tab-login').style.color = tab === 'login' ? '#080c10' : 'var(--text-muted)';
+  document.getElementById('tab-register').style.background = tab === 'register' ? 'var(--green)' : 'transparent';
+  document.getElementById('tab-register').style.color = tab === 'register' ? '#080c10' : 'var(--text-muted)';
+}
+
+function togglePassword(id) {
+  const el = document.getElementById(id);
+  el.type = el.type === 'password' ? 'text' : 'password';
+}
+
+function checkPassword(val) {
+  const bar = document.getElementById('pw-strength-bar');
+  const txt = document.getElementById('pw-strength-txt');
+  let score = 0;
+  if (val.length >= 8) score++;
+  if (/[A-Z]/.test(val)) score++;
+  if (/[0-9]/.test(val)) score++;
+  if (/[^A-Za-z0-9]/.test(val)) score++;
+  const levels = [
+    { pct: 0, color: 'var(--red)', label: '' },
+    { pct: 25, color: 'var(--red)', label: 'Weak' },
+    { pct: 50, color: 'var(--yellow)', label: 'Fair' },
+    { pct: 75, color: 'var(--yellow)', label: 'Good' },
+    { pct: 100, color: 'var(--green)', label: 'Strong' },
+  ];
+  const l = levels[score];
+  bar.style.width = l.pct + '%';
+  bar.style.background = l.color;
+  txt.textContent = l.label;
+  txt.style.color = l.color;
+}
+
+function doLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  const btn = document.getElementById('login-btn');
+
+  if (!email || !password) { showToast('Please fill in all fields', 'error'); return; }
+  if (!email.includes('@')) { showToast('Invalid email address', 'error'); return; }
+
+  btn.textContent = 'Signing in...';
+  btn.disabled = true;
+
+  // Simulate API call
+  setTimeout(() => {
+    btn.textContent = 'Sign In';
+    btn.disabled = false;
+    // Mock: accept any credentials
+    showToast('Welcome back! Redirecting...', 'success');
+    setTimeout(() => window.location.href = 'dashboard.html', 1200);
+  }, 1500);
+}
+
+function doRegister() {
+  const first = document.getElementById('reg-first').value.trim();
+  const email = document.getElementById('reg-email').value.trim();
+  const username = document.getElementById('reg-username').value.trim();
+  const password = document.getElementById('reg-password').value;
+  const agreed = document.getElementById('agree-terms').checked;
+  const btn = document.getElementById('register-btn');
+
+  if (!first || !email || !username || !password) { showToast('Please fill in all fields', 'error'); return; }
+  if (!agreed) { showToast('Please agree to the terms', 'error'); return; }
+  if (password.length < 8) { showToast('Password must be at least 8 characters', 'error'); return; }
+
+  btn.textContent = 'Creating account...';
+  btn.disabled = true;
+
+  setTimeout(() => {
+    btn.textContent = 'Create Account';
+    btn.disabled = false;
+    showToast(`Account created! Welcome, ${username}!`, 'success');
+    setTimeout(() => window.location.href = 'dashboard.html', 1200);
+  }, 1800);
+}
+
+function socialLogin(provider) {
+  showToast(`Connecting to ${provider}...`, 'info');
+  setTimeout(() => {
+    showToast(`Signed in with ${provider}!`, 'success');
+    setTimeout(() => window.location.href = 'dashboard.html', 1000);
+  }, 1500);
+}
+
+function forgotPassword() {
+  const email = document.getElementById('login-email').value.trim();
+  if (!email) { showToast('Enter your email first', 'error'); return; }
+  showToast('Reset link sent to your email', 'success');
+}
+
+// Hide deco on small screens
+function checkDeco() {
+  const deco = document.querySelector('.login-deco');
+  if (deco) deco.style.display = window.innerWidth < 1200 ? 'none' : 'flex';
+}
+window.addEventListener('resize', checkDeco);
+checkDeco();
+</script>
+</body>
+</html>

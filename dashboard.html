@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dashboard — Minecraft EasyProxi</title>
+  <link rel="stylesheet" href="style.css"/>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%234ade80'/><text y='24' font-size='22' x='4'>🌿</text></svg>"/>
+  <style>
+    .mini-chart {
+      height: 40px; display: flex; align-items: flex-end; gap: 3px;
+      margin-top: 12px;
+    }
+    .chart-bar {
+      flex: 1; border-radius: 3px 3px 0 0;
+      background: linear-gradient(to top, var(--green-dim), var(--green));
+      opacity: 0.7; transition: opacity 0.2s;
+      min-height: 4px;
+    }
+    .chart-bar:hover { opacity: 1; }
+    .achievement {
+      display: flex; align-items: center; gap: 14px;
+      padding: 14px; border-radius: var(--radius);
+      background: rgba(255,255,255,0.02);
+      border: 1px solid var(--border);
+      transition: var(--transition);
+    }
+    .achievement:hover { border-color: var(--border-hover); }
+    .achievement-icon { font-size: 28px; }
+    .achievement-name { font-weight: 600; font-size: 0.9rem; }
+    .achievement-desc { font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; }
+    .achievement-pts { margin-left: auto; color: var(--green); font-weight: 700; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; }
+    .session-row {
+      display: flex; align-items: center; gap: 16px;
+      padding: 14px 0; border-bottom: 1px solid var(--border);
+    }
+    .session-icon { width: 40px; height: 40px; border-radius: 10px; background: rgba(74,222,128,0.08); display:grid;place-items:center;font-size:18px;flex-shrink:0; }
+    .session-info { flex: 1; }
+    .session-name { font-size: 0.9rem; font-weight: 600; }
+    .session-meta { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; font-family: 'JetBrains Mono', monospace; }
+    .session-actions { display: flex; gap: 6px; }
+    .plan-card {
+      padding: 24px; border-radius: var(--radius-lg);
+      border: 1px solid var(--border);
+      position: relative; overflow: hidden;
+    }
+    .plan-card.highlighted {
+      border-color: var(--green);
+      background: linear-gradient(135deg, rgba(74,222,128,0.08), transparent);
+    }
+    .plan-card .plan-badge {
+      position: absolute; top: 16px; right: 16px;
+      font-size: 0.7rem; font-weight: 700;
+      background: var(--green); color: #080c10;
+      padding: 3px 8px; border-radius: 6px;
+    }
+    .plan-name { font-family: 'Rajdhani', sans-serif; font-size: 1.3rem; font-weight: 700; margin-bottom: 6px; }
+    .plan-price { font-size: 1.8rem; font-weight: 700; color: var(--green); line-height: 1; margin-bottom: 4px; }
+    .plan-price span { font-size: 0.9rem; color: var(--text-muted); font-weight: 400; }
+    .plan-features { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
+    .plan-features li { list-style: none; font-size: 0.85rem; color: var(--text-muted); display: flex; gap: 8px; }
+    .plan-features li::before { content: '✓'; color: var(--green); }
+    .notif-item {
+      display: flex; gap: 14px; align-items: flex-start;
+      padding: 12px; border-radius: var(--radius);
+      background: rgba(255,255,255,0.02);
+      border: 1px solid var(--border);
+      margin-bottom: 10px;
+      transition: var(--transition);
+    }
+    .notif-item:hover { border-color: var(--border-hover); }
+    .notif-item.unread { border-left: 3px solid var(--green); }
+    .notif-icon { font-size: 20px; flex-shrink: 0; }
+    .notif-text { font-size: 0.85rem; }
+    .notif-time { font-size: 0.72rem; color: var(--text-dim); margin-top: 3px; font-family: 'JetBrains Mono', monospace; }
+    .uptime-grid { display: grid; grid-template-columns: repeat(30, 1fr); gap: 3px; margin-top: 12px; }
+    .uptime-cell { height: 20px; border-radius: 3px; }
+    .uptime-ok { background: var(--green); opacity: 0.7; }
+    .uptime-warn { background: var(--yellow); opacity: 0.7; }
+    .uptime-down { background: var(--red); opacity: 0.7; }
+  </style>
+</head>
+<body>
+
+<div class="bg-grid"></div>
+<div class="bg-orb bg-orb-1" style="opacity:0.3;"></div>
+
+<!-- Nav -->
+<nav class="nav">
+  <a href="index.html" class="nav-logo">
+    <span class="logo-icon">🌿</span>
+    EASYPROXI
+  </a>
+  <ul class="nav-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="play.html">Play</a></li>
+    <li><a href="dashboard.html" class="active">Dashboard</a></li>
+  </ul>
+  <div class="nav-actions">
+    <div class="live-pill"><div class="live-dot"></div><span id="live-count">—</span> online</div>
+    <a href="play.html" class="btn btn-primary btn-sm">▶ Play Now</a>
+    <button class="nav-hamburger" onclick="toggleMobileNav()">☰</button>
+  </div>
+</nav>
+
+<div class="dashboard-layout">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <!-- User Info -->
+    <div style="padding:12px;background:rgba(74,222,128,0.06);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:24px;">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,var(--green-dim),var(--green));display:grid;place-items:center;font-size:20px;">🧑</div>
+        <div>
+          <div style="font-weight:700;font-size:0.9rem;">CreeperSlayer99</div>
+          <div style="font-size:0.72rem;color:var(--text-muted);">Free Plan</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Overview</div>
+      <a href="#overview" class="sidebar-link active"><span class="sidebar-icon">📊</span> Dashboard</a>
+      <a href="#sessions" class="sidebar-link" onclick="activateSidebarLink(this)"><span class="sidebar-icon">🎮</span> Sessions</a>
+      <a href="#achievements" class="sidebar-link" onclick="activateSidebarLink(this)"><span class="sidebar-icon">🏆</span> Achievements</a>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Platform</div>
+      <a href="#status" class="sidebar-link" onclick="activateSidebarLink(this)"><span class="sidebar-icon">⚡</span> Server Status</a>
+      <a href="#notifications" class="sidebar-link" onclick="activateSidebarLink(this)">
+        <span class="sidebar-icon">🔔</span> Notifications
+        <span style="margin-left:auto;background:var(--green);color:#080c10;border-radius:99px;padding:1px 7px;font-size:0.7rem;font-weight:700;">3</span>
+      </a>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Account</div>
+      <a href="#plan" class="sidebar-link" onclick="activateSidebarLink(this)"><span class="sidebar-icon">💎</span> Upgrade Plan</a>
+      <a href="#" class="sidebar-link" onclick="activateSidebarLink(this)"><span class="sidebar-icon">⚙️</span> Settings</a>
+      <a href="login.html" class="sidebar-link" style="color:var(--red);"><span class="sidebar-icon">🚪</span> Sign Out</a>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content">
+
+    <!-- Header -->
+    <div class="dash-header" id="overview">
+      <div>
+        <div class="dash-title">Good afternoon, <span class="accent">CreeperSlayer99</span> 👋</div>
+        <div class="dash-sub">Here's what's happening with your account today.</div>
+      </div>
+      <a href="play.html" class="btn btn-primary">▶ Start Session</a>
+    </div>
+
+    <!-- Stats Row -->
+    <div class="stats-row">
+      <div class="glass stat-card">
+        <div class="stat-card-label">Hours Played</div>
+        <div class="stat-card-val" id="stat-hours">—</div>
+        <div class="stat-card-change">↑ +2.4h this week</div>
+        <div class="mini-chart" id="chart-hours"></div>
+      </div>
+      <div class="glass stat-card">
+        <div class="stat-card-label">Sessions</div>
+        <div class="stat-card-val" id="stat-sessions">—</div>
+        <div class="stat-card-change">↑ +3 this month</div>
+        <div class="mini-chart" id="chart-sessions"></div>
+      </div>
+      <div class="glass stat-card">
+        <div class="stat-card-label">Avg FPS</div>
+        <div class="stat-card-val" id="stat-fps">—</div>
+        <div class="stat-card-change" style="color:var(--yellow);">→ Stable</div>
+        <div class="mini-chart" id="chart-fps"></div>
+      </div>
+      <div class="glass stat-card">
+        <div class="stat-card-label">Avg Ping</div>
+        <div class="stat-card-val" id="stat-ping">—</div>
+        <div class="stat-card-change">↓ -3ms improved</div>
+        <div class="mini-chart" id="chart-ping"></div>
+      </div>
+    </div>
+
+    <!-- 2-col layout -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;" id="sessions">
+
+      <!-- Recent Sessions -->
+      <div class="glass" style="padding:24px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+          <div style="font-family:'Rajdhani',sans-serif;font-size:1.1rem;font-weight:700;">Recent Sessions</div>
+          <button class="btn btn-ghost btn-sm">View All</button>
+        </div>
+        <div id="sessions-list">
+          <!-- populated by JS -->
+        </div>
+      </div>
+
+      <!-- Notifications -->
+      <div class="glass" style="padding:24px;" id="notifications">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+          <div style="font-family:'Rajdhani',sans-serif;font-size:1.1rem;font-weight:700;">Notifications</div>
+          <button class="btn btn-ghost btn-sm" onclick="markAllRead()">Mark all read</button>
+        </div>
+        <div id="notifications-list">
+          <!-- populated by JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Server Status -->
+    <div class="glass" style="padding:24px;margin-bottom:20px;" id="status">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+        <div style="font-family:'Rajdhani',sans-serif;font-size:1.1rem;font-weight:700;">Server Status</div>
+        <div style="font-size:0.78rem;color:var(--text-muted);font-family:'JetBrains Mono',monospace;">Updated: just now</div>
+      </div>
+      <div class="server-grid" id="server-grid-dash"></div>
+    </div>
+
+    <!-- Achievements -->
+    <div class="glass" style="padding:24px;margin-bottom:20px;" id="achievements">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+        <div style="font-family:'Rajdhani',sans-serif;font-size:1.1rem;font-weight:700;">Achievements</div>
+        <span class="tag tag-green">4 / 12 unlocked</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;" id="achievements-list">
+        <!-- populated by JS -->
+      </div>
+    </div>
+
+    <!-- Uptime -->
+    <div class="glass" style="padding:24px;margin-bottom:20px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <div style="font-family:'Rajdhani',sans-serif;font-size:1.1rem;font-weight:700;">Platform Uptime — Last 30 Days</div>
+        <span class="tag tag-green">99.8% uptime</span>
+      </div>
+      <div style="font-size:0.78rem;color:var(--text-muted);margin-bottom:12px;">Each block = 1 day. Green = operational, yellow = degraded, red = outage.</div>
+      <div class="uptime-grid" id="uptime-grid"></div>
+    </div>
+
+    <!-- Upgrade Plans -->
+    <div id="plan">
+      <div style="font-family:'Rajdhani',sans-serif;font-size:1.4rem;font-weight:700;margin-bottom:20px;">Upgrade Your Plan</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;">
+        <div class="plan-card">
+          <div class="plan-name">Free</div>
+          <div class="plan-price">$0 <span>/month</span></div>
+          <ul class="plan-features">
+            <li>720p streaming</li>
+            <li>30 FPS max</li>
+            <li>Queue priority: Low</li>
+            <li>2h session limit</li>
+            <li>Vanilla only</li>
+          </ul>
+          <button class="btn btn-ghost" style="width:100%;justify-content:center;margin-top:20px;" disabled>Current Plan</button>
+        </div>
+        <div class="plan-card highlighted">
+          <div class="plan-badge">POPULAR</div>
+          <div class="plan-name">Pro</div>
+          <div class="plan-price">$6 <span>/month</span></div>
+          <ul class="plan-features">
+            <li>1080p streaming</li>
+            <li>60 FPS</li>
+            <li>Priority queue</li>
+            <li>Unlimited sessions</li>
+            <li>All modpacks</li>
+            <li>Cloud save</li>
+          </ul>
+          <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:20px;" onclick="upgradePlan('Pro')">Upgrade to Pro</button>
+        </div>
+        <div class="plan-card">
+          <div class="plan-name">Ultra</div>
+          <div class="plan-price">$14 <span>/month</span></div>
+          <ul class="plan-features">
+            <li>1440p streaming</li>
+            <li>120 FPS</li>
+            <li>Skip queue always</li>
+            <li>Dedicated node</li>
+            <li>Custom modpacks</li>
+            <li>Priority support</li>
+          </ul>
+          <button class="btn btn-secondary" style="width:100%;justify-content:center;margin-top:20px;" onclick="upgradePlan('Ultra')">Upgrade to Ultra</button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<div id="toast-container"></div>
+<script src="script.js"></script>
+<script>
+// ─── Render Stats ───
+function renderStats() {
+  document.getElementById('stat-hours').textContent = (47 + Math.floor(Math.random()*5)).toLocaleString();
+  document.getElementById('stat-sessions').textContent = 23 + Math.floor(Math.random()*3);
+  document.getElementById('stat-fps').textContent = '58';
+  document.getElementById('stat-ping').textContent = '24ms';
+
+  // Mini charts
+  ['chart-hours','chart-sessions','chart-fps','chart-ping'].forEach(id => {
+    const el = document.getElementById(id);
+    el.innerHTML = '';
+    for (let i = 0; i < 14; i++) {
+      const pct = 20 + Math.random() * 80;
+      const bar = document.createElement('div');
+      bar.className = 'chart-bar';
+      bar.style.height = pct + '%';
+      bar.title = Math.floor(pct) + '%';
+      el.appendChild(bar);
+    }
+  });
+}
+
+// ─── Sessions ───
+const sessions = [
+  { icon: '🌿', name: 'Survival World', meta: 'Vanilla 1.21.1 · us-east · 1h 23m', time: '2h ago', status: 'ended' },
+  { icon: '🔥', name: 'Forge Modpack', meta: 'Forge 1.20.4 · eu-west · 45m', time: 'Yesterday', status: 'ended' },
+  { icon: '✨', name: 'Shaders Test', meta: 'Optifine 1.21.1 · us-east · 12m', time: '3 days ago', status: 'ended' },
+  { icon: '🧵', name: 'Fabric QoL', meta: 'Fabric 1.20.4 · us-west · 2h 05m', time: '1 week ago', status: 'ended' },
+];
+
+function renderSessions() {
+  const el = document.getElementById('sessions-list');
+  el.innerHTML = sessions.map(s => `
+    <div class="session-row">
+      <div class="session-icon">${s.icon}</div>
+      <div class="session-info">
+        <div class="session-name">${s.name}</div>
+        <div class="session-meta">${s.meta}</div>
+      </div>
+      <div style="font-size:0.75rem;color:var(--text-dim);">${s.time}</div>
+      <div class="session-actions">
+        <button class="btn btn-ghost btn-sm" onclick="showToast('Resuming ${s.name}...','info');setTimeout(()=>location.href='play.html',800)">▶</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ─── Notifications ───
+const notifications = [
+  { icon: '🎉', text: 'Welcome to EasyProxi! Your account is ready.', time: '5 min ago', unread: true },
+  { icon: '⚡', text: 'New server node added: ap-singapore-1 (25ms avg).', time: '1h ago', unread: true },
+  { icon: '🔔', text: 'Minecraft 1.21.1 is now available on all nodes.', time: '2 days ago', unread: true },
+  { icon: '💡', text: 'Tip: Enable Low Latency Mode for faster response.', time: '1 week ago', unread: false },
+];
+
+function renderNotifications() {
+  const el = document.getElementById('notifications-list');
+  el.innerHTML = notifications.map(n => `
+    <div class="notif-item ${n.unread ? 'unread' : ''}">
+      <div class="notif-icon">${n.icon}</div>
+      <div>
+        <div class="notif-text">${n.text}</div>
+        <div class="notif-time">${n.time}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function markAllRead() {
+  document.querySelectorAll('.notif-item').forEach(el => el.classList.remove('unread'));
+  showToast('All notifications marked as read', 'success');
+}
+
+// ─── Achievements ───
+const achievements = [
+  { icon: '🌍', name: 'First Login', desc: 'Created your EasyProxi account', pts: '+50 XP', unlocked: true },
+  { icon: '🎮', name: 'First Stream', desc: 'Played your first cloud session', pts: '+100 XP', unlocked: true },
+  { icon: '⏱️', name: 'Time Lord', desc: 'Played for 10+ hours total', pts: '+200 XP', unlocked: true },
+  { icon: '🌐', name: 'Globe Trotter', desc: 'Connected to 3 different regions', pts: '+150 XP', unlocked: true },
+  { icon: '💎', name: 'Diamond Tier', desc: 'Subscribe to Pro plan', pts: '+500 XP', unlocked: false },
+  { icon: '⚡', name: 'Speed Demon', desc: 'Achieve <20ms ping for 10 sessions', pts: '+300 XP', unlocked: false },
+];
+
+function renderAchievements() {
+  const el = document.getElementById('achievements-list');
+  el.innerHTML = achievements.map(a => `
+    <div class="achievement" style="${!a.unlocked ? 'opacity:0.4;' : ''}">
+      <div class="achievement-icon">${a.icon}</div>
+      <div>
+        <div class="achievement-name">${a.name}</div>
+        <div class="achievement-desc">${a.desc}</div>
+      </div>
+      <div class="achievement-pts">${a.unlocked ? a.pts : '🔒'}</div>
+    </div>
+  `).join('');
+}
+
+// ─── Uptime ───
+function renderUptime() {
+  const el = document.getElementById('uptime-grid');
+  el.innerHTML = '';
+  for (let i = 0; i < 30; i++) {
+    const cell = document.createElement('div');
+    cell.className = 'uptime-cell';
+    const r = Math.random();
+    if (r > 0.97) cell.classList.add('uptime-down');
+    else if (r > 0.93) cell.classList.add('uptime-warn');
+    else cell.classList.add('uptime-ok');
+    cell.title = `Day ${30 - i}: ${r > 0.97 ? 'Outage' : r > 0.93 ? 'Degraded' : '100% Operational'}`;
+    el.appendChild(cell);
+  }
+}
+
+// ─── Sidebar links ───
+function activateSidebarLink(el) {
+  document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function upgradePlan(plan) {
+  showToast(`Redirecting to ${plan} checkout...`, 'info');
+}
+
+// ─── Live count ───
+let liveCount = 1800 + Math.floor(Math.random()*200);
+document.getElementById('live-count').textContent = liveCount.toLocaleString();
+setInterval(() => {
+  liveCount += Math.floor(Math.random()*5)-2;
+  liveCount = Math.max(1500,liveCount);
+  document.getElementById('live-count').textContent = liveCount.toLocaleString();
+}, 4000);
+
+function toggleMobileNav() {}
+
+document.addEventListener('DOMContentLoaded', () => {
+  renderStats();
+  renderSessions();
+  renderNotifications();
+  renderAchievements();
+  renderServerGrid('server-grid-dash');
+  renderUptime();
+});
+</script>
+</body>
+</html>
